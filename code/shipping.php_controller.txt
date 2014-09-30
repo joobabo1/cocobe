@@ -1,0 +1,396 @@
+<?php 
+class ControllerAccountShipping extends Controller {
+	private $error = array();
+
+	public function index() {
+		if (!$this->customer->isLogged()) {
+			$this->session->data['redirect'] = $this->url->link('account/shipping', '', 'SSL');
+
+			$this->redirect($this->url->link('account/login', '', 'SSL'));
+		}
+
+		$this->language->load('account/shipping');
+
+		$this->document->setTitle($this->language->get('heading_title'));
+		$this->document->addScript('catalog/view/javascript/jquery/colorbox/jquery.colorbox-min.js');
+		$this->document->addStyle('catalog/view/javascript/jquery/colorbox/colorbox.css');
+
+		$this->data['breadcrumbs'] = array();
+
+		$this->data['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_home'),
+			'href'      => $this->url->link('common/home'),        	
+			'separator' => false
+		);
+
+		$this->data['breadcrumbs'][] = array(
+			'text'      => $this->language->get('text_account'),
+			'href'      => $this->url->link('account/account', '', 'SSL'),        	
+			'separator' => $this->language->get('text_separator')
+		);
+
+		$url = '';
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+
+		$this->data['breadcrumbs'][] = array(
+			'text'      => $this->language->get('heading_title'),
+			'href'      => $this->url->link('account/shipping', $url, 'SSL'),        	
+			'separator' => $this->language->get('text_separator')
+		);
+
+		$this->data['heading_title'] = $this->language->get('heading_title');
+		
+		$this->load->model('account/customer');
+		
+		$customer_info = $this->model_account_customer->getCustomer($this->customer->getId());
+		
+		$this->load->model('account/address');
+		$this->load->model('account/shipping');
+		
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
+			$address_data = $this->model_account_address->getAddress($this->request->post['address_id']);
+						
+			if((utf8_strlen($this->request->post['shipping_address']) == 'new')) {
+				$address_id = $this->model_account_address->addAddress($this->request->post);
+				$address_data = $this->model_account_address->getAddress($address_id);
+				$this->session->data['success'] = $this->language->get('text_address_insert');
+			}
+			
+			$this->model_account_shipping->addShipping($this->request->post, $address_data);
+			$this->session->data['success'] = $this->language->get('text_shipping_insert');
+
+			$this->redirect($this->url->link('account/shipping', '', 'SSL'));
+		}
+		
+		$this->data['text_shipping'] = $this->language->get('text_shipping');
+		$this->data['text_checkout_shipping_address'] = $this->language->get('text_checkout_shipping_address');
+		
+		$this->data['entry_telephone'] = $this->language->get('entry_telephone');
+		
+		if (isset($this->error['telephone'])) {
+			$this->data['error_telephone'] = $this->error['telephone'];
+		} else {
+			$this->data['error_telephone'] = '';
+		}
+		
+		if (isset($this->error['weight'])) {
+			$this->data['error_weight'] = $this->error['weight'];
+		} else {
+			$this->data['error_weight'] = '';
+		}
+		
+		if (isset($this->error['contents'])) {
+			$this->data['error_contents'] = $this->error['contents'];
+		} else {
+			$this->data['error_contents'] = '';
+		}
+		
+		$this->data['action'] = $this->url->link('account/shipping', '', 'SSL');
+		
+		if (isset($this->request->post['telephone'])) {
+			$this->data['telephone'] = $this->request->post['telephone'];
+		} elseif (isset($customer_info)) {
+			$this->data['telephone'] = $customer_info['telephone'];
+		} else {
+			$this->data['telephone'] = '';
+		}
+
+		$this->data['weight'] = '';
+		
+		$this->data['contents'] = '';
+		
+		$this->data['entry_weight'] = $this->language->get('entry_weight');	
+		$this->data['entry_contents'] = $this->language->get('entry_contents');	    	
+		$this->data['entry_telephone'] = $this->language->get('entry_telephone');
+		$this->data['entry_bundle'] = $this->language->get('entry_bundle');
+		
+		$this->data['button_continue'] = $this->language->get('button_continue');
+
+		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/account/shipping_form.tpl')) {
+			$this->template = $this->config->get('config_template') . '/template/account/shipping_form.tpl';
+		} else {
+			$this->template = 'default/template/account/shipping_form.tpl';
+		}
+
+		$this->children = array(
+			'common/column_left',
+			'common/column_right',
+			'common/content_top',
+			'common/content_bottom',
+			'common/footer',
+			'common/header'
+		);
+
+		$this->response->setOutput($this->render());				
+	}
+
+	public function address() {
+		$this->language->load('account/shipping');
+		
+		$this->data['text_address_existing'] = $this->language->get('text_address_existing');
+		$this->data['text_address_new'] = $this->language->get('text_address_new');
+		$this->data['text_address_pickup'] = $this->language->get('text_address_pickup');
+
+		$this->data['entry_firstname'] = $this->language->get('entry_firstname');
+		$this->data['entry_lastname'] = $this->language->get('entry_lastname');
+		$this->data['entry_address_1'] = $this->language->get('entry_address_1');
+		$this->data['entry_address_2'] = $this->language->get('entry_address_2');
+		$this->data['entry_postcode'] = $this->language->get('entry_postcode');
+		$this->data['entry_city'] = $this->language->get('entry_city');
+		$this->data['entry_country'] = $this->language->get('entry_country');
+		$this->data['entry_zone'] = $this->language->get('entry_zone');
+		
+		$this->data['address_type'] = 'existing';
+
+		if(isset($this->request->post['shipping_address'])) {
+			if ($this->request->post['shipping_address'] == 'new') {
+				$this->data['address_type'] = 'new';
+			} else if ($this->request->post['shipping_address'] == 'pickup') {
+				$this->data['address_type'] = 'pickup';
+			}
+		}
+		
+		$this->getForm();
+			
+		if (isset($this->session->data['shipping_address_id'])) {
+			$this->data['address_id'] = $this->session->data['shipping_address_id'];
+		} else {
+			$this->data['address_id'] = $this->customer->getAddressId();
+		}
+
+		$this->load->model('account/address');
+
+		$this->data['addresses'] = $this->model_account_address->getAddresses();
+
+		if (isset($this->session->data['shipping_postcode'])) {
+			$this->data['postcode'] = $this->session->data['shipping_postcode'];		
+		} else {
+			$this->data['postcode'] = '';
+		}
+				
+		if (isset($this->session->data['shipping_country_id'])) {
+			$this->data['country_id'] = $this->session->data['shipping_country_id'];		
+		} else {
+			$this->data['country_id'] = $this->config->get('config_country_id');
+		}
+				
+		if (isset($this->session->data['shipping_zone_id'])) {
+			$this->data['zone_id'] = $this->session->data['shipping_zone_id'];		
+		} else {
+			$this->data['zone_id'] = '';
+		}
+						
+		$this->load->model('localisation/country');
+		
+		$this->data['countries'] = $this->model_localisation_country->getCountries();
+
+		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/account/shipping_address.tpl')) {
+			$this->template = $this->config->get('config_template') . '/template/account/shipping_address.tpl';
+		} else {
+			$this->template = 'default/template/account/shipping_address.tpl';
+		}
+				
+		$this->response->setOutput($this->render());
+	}
+
+	protected function validate() {
+		if ((utf8_strlen($this->request->post['telephone']) < 3) || (utf8_strlen($this->request->post['telephone']) > 32)) {
+			$this->error['telephone'] = $this->language->get('error_telephone');
+		}
+		
+		if ((utf8_strlen($this->request->post['weight']) == '')) {
+			$this->error['weight'] = $this->language->get('error_weight');
+		}
+		
+		if ((utf8_strlen($this->request->post['contents']) == '')) {
+			$this->error['contents'] = $this->language->get('error_contents');
+		}
+		
+		if (!$this->error) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public function validateForm() {
+		if($this->request->post['shipping_address'] == 'new') {
+			if ((utf8_strlen($this->request->post['firstname']) < 1) || (utf8_strlen($this->request->post['firstname']) > 32)) {
+				$this->error['firstname'] = $this->language->get('error_firstname');
+			}
+	
+			if ((utf8_strlen($this->request->post['lastname']) < 1) || (utf8_strlen($this->request->post['lastname']) > 32)) {
+				$this->error['lastname'] = $this->language->get('error_lastname');
+			}
+	
+			if ((utf8_strlen($this->request->post['address_1']) < 3) || (utf8_strlen($this->request->post['address_1']) > 128)) {
+				$this->error['address_1'] = $this->language->get('error_address_1');
+			}
+	
+			if ((utf8_strlen($this->request->post['city']) < 2) || (utf8_strlen($this->request->post['city']) > 128)) {
+				$this->error['city'] = $this->language->get('error_city');
+			}
+	
+			$this->load->model('localisation/country');
+	
+			$country_info = $this->model_localisation_country->getCountry($this->request->post['country_id']);
+	
+			if ($country_info) {
+				if ($country_info['postcode_required'] && (utf8_strlen($this->request->post['postcode']) < 2) || (utf8_strlen($this->request->post['postcode']) > 10)) {
+					$this->error['postcode'] = $this->language->get('error_postcode');
+				}	
+			}
+	
+			if ($this->request->post['country_id'] == '') {
+				$this->error['country'] = $this->language->get('error_country');
+			}
+	
+			if (!isset($this->request->post['zone_id']) || $this->request->post['zone_id'] == '') {
+				$this->error['zone'] = $this->language->get('error_zone');
+			}
+		}
+
+		if (!$this->error) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	protected function getForm() {
+		$this->data['text_edit_address'] = $this->language->get('text_edit_address');
+		$this->data['text_yes'] = $this->language->get('text_yes');
+		$this->data['text_no'] = $this->language->get('text_no');
+		$this->data['text_select'] = $this->language->get('text_select');
+		$this->data['text_none'] = $this->language->get('text_none');
+		
+		$this->data['entry_add'] = $this->language->get('entry_add');		
+		
+		if (isset($this->error['firstname'])) {
+			$this->data['error_firstname'] = $this->error['firstname'];
+		} else {
+			$this->data['error_firstname'] = '';
+		}
+
+		if (isset($this->error['lastname'])) {
+			$this->data['error_lastname'] = $this->error['lastname'];
+		} else {
+			$this->data['error_lastname'] = '';
+		}
+
+		if (isset($this->error['address_1'])) {
+			$this->data['error_address_1'] = $this->error['address_1'];
+		} else {
+			$this->data['error_address_1'] = '';
+		}
+
+		if (isset($this->error['city'])) {
+			$this->data['error_city'] = $this->error['city'];
+		} else {
+			$this->data['error_city'] = '';
+		}
+
+		if (isset($this->error['postcode'])) {
+			$this->data['error_postcode'] = $this->error['postcode'];
+		} else {
+			$this->data['error_postcode'] = '';
+		}
+
+		if (isset($this->error['country'])) {
+			$this->data['error_country'] = $this->error['country'];
+		} else {
+			$this->data['error_country'] = '';
+		}
+
+		if (isset($this->error['zone'])) {
+			$this->data['error_zone'] = $this->error['zone'];
+		} else {
+			$this->data['error_zone'] = '';
+		}
+
+		if (isset($this->request->get['address_id']) && ($this->request->server['REQUEST_METHOD'] != 'POST')) {
+			$address_info = $this->model_account_address->getAddress($this->request->get['address_id']);
+		}
+
+		if (isset($this->request->post['firstname'])) {
+			$this->data['firstname'] = $this->request->post['firstname'];
+		} elseif (!empty($address_info)) {
+			$this->data['firstname'] = $address_info['firstname'];
+		} else {
+			$this->data['firstname'] = '';
+		}
+
+		if (isset($this->request->post['lastname'])) {
+			$this->data['lastname'] = $this->request->post['lastname'];
+		} elseif (!empty($address_info)) {
+			$this->data['lastname'] = $address_info['lastname'];
+		} else {
+			$this->data['lastname'] = '';
+		}
+
+		if (isset($this->request->post['address_1'])) {
+			$this->data['address_1'] = $this->request->post['address_1'];
+		} elseif (!empty($address_info)) {
+			$this->data['address_1'] = $address_info['address_1'];
+		} else {
+			$this->data['address_1'] = '';
+		}
+
+		if (isset($this->request->post['address_2'])) {
+			$this->data['address_2'] = $this->request->post['address_2'];
+		} elseif (!empty($address_info)) {
+			$this->data['address_2'] = $address_info['address_2'];
+		} else {
+			$this->data['address_2'] = '';
+		}
+
+		if (isset($this->request->post['postcode'])) {
+			$this->data['postcode'] = $this->request->post['postcode'];
+		} elseif (!empty($address_info)) {
+			$this->data['postcode'] = $address_info['postcode'];			
+		} else {
+			$this->data['postcode'] = '';
+		}
+
+		if (isset($this->request->post['city'])) {
+			$this->data['city'] = $this->request->post['city'];
+		} elseif (!empty($address_info)) {
+			$this->data['city'] = $address_info['city'];
+		} else {
+			$this->data['city'] = '';
+		}
+
+		if (isset($this->request->post['country_id'])) {
+			$this->data['country_id'] = $this->request->post['country_id'];
+		}  elseif (!empty($address_info)) {
+			$this->data['country_id'] = $address_info['country_id'];
+		} else {
+			$this->data['country_id'] = $this->config->get('config_country_id');
+		}
+
+		if (isset($this->request->post['zone_id'])) {
+			$this->data['zone_id'] = $this->request->post['zone_id'];
+		}  elseif (!empty($address_info)) {
+			$this->data['zone_id'] = $address_info['zone_id'];
+		} else {
+			$this->data['zone_id'] = '';
+		}
+
+		$this->load->model('localisation/country');
+
+		$this->data['countries'] = $this->model_localisation_country->getCountries();
+
+		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/account/address_form.tpl')) {
+			$this->template = $this->config->get('config_template') . '/template/account/address_form.tpl';
+		} else {
+			$this->template = 'default/template/account/address_form.tpl';
+		}
+
+		$this->response->setOutput($this->render());	
+	}
+
+}
+?>

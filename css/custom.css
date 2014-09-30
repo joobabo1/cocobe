@@ -1,0 +1,20 @@
+@charset "utf-8";
+/* CSS Document */
+
+.totop {
+	position: fixed;
+	bottom: 0px;
+	right: 0px;
+	z-index: 104400;
+	background: #FFF;
+}
+
+.totop a, .totop a:visited, .totop a:hover{
+	display: block;
+	width: 30px;
+	height: 30px;
+	color: #000;
+	text-align: center;
+	line-height: 30px;
+	text-decoration:none;
+}

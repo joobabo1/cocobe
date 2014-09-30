@@ -1,0 +1,91 @@
+<?php echo $header; ?>
+<?php echo $column_left; ?><?php echo $column_right; ?>
+<div id="content"><?php echo $content_top; ?>
+  <div class="breadcrumb">
+    <?php foreach ($breadcrumbs as $breadcrumb) { ?>
+    <?php echo $breadcrumb['separator']; ?><a href="<?php echo $breadcrumb['href']; ?>"><?php echo $breadcrumb['text']; ?></a>
+    <?php } ?>
+  </div>
+  <h1><?php echo $heading_title; ?></h1>
+    
+  <form action="<?php echo $action; ?>" method="post" enctype="multipart/form-data">
+    <h2><?php echo $text_shipping; ?></h2>
+    <div class="content">
+      <div class="left">
+        <span class="required">*</span> <?php echo $entry_telephone; ?><br />
+        <input type="text" name="telephone" value="<?php echo $telephone; ?>" class="large-field" />
+        <br />
+        <?php if ($error_telephone) { ?>
+        <span class="error"><?php echo $error_telephone; ?></span>
+        <?php } ?>
+        <br />
+        <div id="shipping-address">
+          <span class="required">*</span>
+	      <span class="shipping-heading"><?php echo $text_checkout_shipping_address; ?></span>
+	      <div class="shipping-content"></div>
+	    </div>
+	    <br />
+      </div>
+      <div class="right">
+      	<span class="required">*</span> <?php echo $entry_weight; ?><br />
+        <input type="text" name="weight" value="<?php echo $weight; ?>" class="large-field" />
+        <br />
+        <?php if ($error_weight) { ?>
+        <span class="error"><?php echo $error_weight; ?></span>
+        <?php } ?>
+        <br />
+        <span class="required">*</span> <?php echo $entry_contents; ?><br />
+        <input type="text" name="contents" value="<?php echo $contents; ?>" class="large-field" />
+        <br />
+        <?php if ($error_contents) { ?>
+        <span class="error"><?php echo $error_contents; ?></span>
+        <?php } ?>
+        <br />
+        <?php echo $entry_bundle; ?>
+        <input type="checkbox" name="bundle" value="1" />
+        <br />
+      </div>
+    </div>
+    
+    <div class="buttons">
+      <div class="right">
+        <input type="button" id="button-shipping-address" value="<?php echo $button_continue; ?>" class="button" />
+      </div>
+    </div>
+    
+  </form>
+  <?php echo $content_bottom; ?></div>
+<script type="text/javascript"><!--
+$(document).ready(function() {
+	$('.date').datepicker({dateFormat: 'yy-mm-dd'});
+});
+//--></script> 
+<script type="text/javascript"><!--
+$(document).ready(function() {
+	$('.colorbox').colorbox({
+		width: 640,
+		height: 480
+	});
+});
+//--></script> 
+<script type="text/javascript"><!--
+$(document).ready(function() {
+	$.ajax({
+				url: 'index.php?route=account/shipping/address',
+				dataType: 'html',
+				success: function(html) {
+					$('#shipping-address .shipping-content').html(html);
+					
+					$('#shipping-address .shipping-content').slideDown('slow');
+				},
+				error: function(xhr, ajaxOptions, thrownError) {
+					alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+				}
+			});
+});
+
+//--></script>
+
+
+
+<?php echo $footer; ?>

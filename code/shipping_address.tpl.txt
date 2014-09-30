@@ -1,0 +1,181 @@
+<?php if ($addresses) { ?>
+<input type="radio" name="shipping_address" value="existing" id="shipping-address-existing" checked="checked" />
+<label for="shipping-address-existing"><?php echo $text_address_existing; ?></label>
+<div id="shipping-existing">
+  <select name="address_id" style="width: 100%; margin-bottom: 15px;" size="5">
+    <?php foreach ($addresses as $address) { ?>
+    <?php if ($address['address_id'] == $address_id) { ?>
+    <option value="<?php echo $address['address_id']; ?>" selected="selected"><?php echo $address['firstname']; ?> <?php echo $address['lastname']; ?>, <?php echo $address['address_1']; ?>, <?php echo $address['city']; ?>, <?php echo $address['zone']; ?>, <?php echo $address['country']; ?></option>
+    <?php } else { ?>
+    <option value="<?php echo $address['address_id']; ?>"><?php echo $address['firstname']; ?> <?php echo $address['lastname']; ?>, <?php echo $address['address_1']; ?>, <?php echo $address['city']; ?>, <?php echo $address['zone']; ?>, <?php echo $address['country']; ?></option>
+    <?php } ?>
+    <?php } ?>
+  </select>
+</div>
+<p>
+  <input type="radio" name="shipping_address" value="new" id="shipping-address-new" />
+  <label for="shipping-address-new"><?php echo $text_address_new; ?></label>
+</p>
+<?php } ?>
+<div id="shipping-new" style="display: <?php echo ($addresses ? 'none' : 'block'); ?>;">
+  <table class="form buttons">
+        <tr>
+          <td><span class="required">*</span> <?php echo $entry_firstname; ?></td>
+          <td><input type="text" name="firstname" id="firstname" value="<?php echo $firstname; ?>" />
+            <?php if ($error_firstname) { ?>
+            <span class="error"><?php echo $error_firstname; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><span class="required">*</span> <?php echo $entry_lastname; ?></td>
+          <td><input type="text" name="lastname" id="lastname" value="<?php echo $lastname; ?>" />
+            <?php if ($error_lastname) { ?>
+            <span class="error"><?php echo $error_lastname; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><span class="required">*</span> <?php echo $entry_address_1; ?></td>
+          <td><input type="text" name="address_1" id="address_1" value="<?php echo $address_1; ?>" />
+            <?php if ($error_address_1) { ?>
+            <span class="error"><?php echo $error_address_1; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><?php echo $entry_address_2; ?></td>
+          <td><input type="text" name="address_2" value="<?php echo $address_2; ?>" /></td>
+        </tr>
+        <tr>
+          <td><span class="required">*</span> <?php echo $entry_city; ?></td>
+          <td><input type="text" name="city" id="city" value="<?php echo $city; ?>" />
+            <?php if ($error_city) { ?>
+            <span class="error"><?php echo $error_city; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><span id="postcode-required" class="required">*</span> <?php echo $entry_postcode; ?></td>
+          <td><input type="text" name="postcode" id="postcode" value="<?php echo $postcode; ?>" />
+            <?php if ($error_postcode) { ?>
+            <span class="error"><?php echo $error_postcode; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><span class="required">*</span> <?php echo $entry_country; ?></td>
+          <td><select name="country_id" id="country_id">
+              <option value=""><?php echo $text_select; ?></option>
+              <?php foreach ($countries as $country) { ?>
+              <?php if ($country['country_id'] == $country_id) { ?>
+              <option value="<?php echo $country['country_id']; ?>" selected="selected"><?php echo $country['name']; ?></option>
+              <?php } else { ?>
+              <option value="<?php echo $country['country_id']; ?>"><?php echo $country['name']; ?></option>
+              <?php } ?>
+              <?php } ?>
+            </select>
+            <?php if ($error_country) { ?>
+            <span class="error"><?php echo $error_country; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><span class="required">*</span> <?php echo $entry_zone; ?></td>
+          <td><select name="zone_id" id="zone_id">
+            </select>
+            <?php if ($error_zone) { ?>
+            <span class="error"><?php echo $error_zone; ?></span>
+            <?php } ?></td>
+        </tr>
+        <tr>
+          <td><?php echo $entry_add; ?></td>
+          <td>
+            <input type="radio" name="add" value="1" />
+            <?php echo $text_yes; ?>
+            <input type="radio" name="add" value="0" checked="checked" />
+            <?php echo $text_no; ?>
+           </td>
+        </tr>
+      </table>
+</div>
+<p>
+  <input type="radio" name="shipping_address" value="pickup" id="shipping-address-pickup" />
+  <label for="shipping-address-pickup"><?php echo $text_address_pickup; ?></label>
+</p>
+
+<script type="text/javascript"><!--
+$('#shipping-address input[name=\'shipping_address\']').live('change', function() {
+	if (this.value == 'new') {
+		$('#shipping-existing').hide();
+		$('#shipping-new').show();
+	} else if (this.value == 'existing') {
+		$('#shipping-existing').show();
+		$('#shipping-new').hide();
+	} else {
+		$('#shipping-existing').hide();
+		$('#shipping-new').hide();
+	}
+});
+//--></script>
+
+<script type="text/javascript"><!--
+$('select[name=\'country_id\']').bind('change', function() {
+	$.ajax({
+		url: 'index.php?route=account/address/country&country_id=' + this.value,
+		dataType: 'json',
+		beforeSend: function() {
+			$('select[name=\'country_id\']').after('<span class="wait">&nbsp;<img src="catalog/view/theme/default/image/loading.gif" alt="" /></span>');
+		},		
+		complete: function() {
+			$('.wait').remove();
+		},			
+		success: function(json) {
+			html = '<option value=""><?php echo $text_select; ?></option>';
+			
+			if (json['zone'] != '') {
+				for (i = 0; i < json['zone'].length; i++) {
+        			html += '<option value="' + json['zone'][i]['zone_id'] + '"';
+	    			
+					if (json['zone'][i]['zone_id'] == '<?php echo $zone_id; ?>') {
+	      				html += ' selected="selected"';
+	    			}
+	
+	    			html += '>' + json['zone'][i]['name'] + '</option>';
+				}
+			} else {
+				html += '<option value="0" selected="selected"><?php echo $text_none; ?></option>';
+			}
+			
+			$('select[name=\'zone_id\']').html(html);
+		},
+		error: function(xhr, ajaxOptions, thrownError) {
+			alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+		}
+	});
+});
+
+$('select[name=\'country_id\']').trigger('change');
+
+// Shipping Address			
+$('#button-shipping-address').live('click', function() {
+	if($('#shipping-address input[id=\'shipping-address-new\']:checked').val() == 'new') {
+		$.ajax({
+			url: 'index.php?route=account/shipping/validateForm',
+			type: 'post',
+			data: {
+				shipping_address: $('#shipping-address input[id=\'shipping-address-new\']:checked').val(),
+				firstname: $('#firstname').val(),
+				lastname: $('#lastname').val(),
+				address_1: $('#address_1').val(),
+				city: $('#city').val(),
+				postcode: $('#postcode').val(),
+				country_id: $('#country_id').val(),
+				zone_id: $('#zone_id').val()
+			},
+			success: function() {
+				 //window.location.href = 'index.php?route=account/shipping'; 
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+			
+		});	
+	}
+});
+
+//--></script>
